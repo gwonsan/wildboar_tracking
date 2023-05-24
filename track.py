@@ -1,7 +1,7 @@
 import argparse
 
 import os
-# limit the number of cpus used by high performance libraries
+# limit the number of cpus used by high performance libraries   쓰레드 설정
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -194,6 +194,7 @@ def run(
                     for j, (output, conf) in enumerate(zip(outputs[i], det[:, 4])):
     
                         bboxes = output[0:4]
+                        bbox2 = [output[0]+((output[2] - output[0])/2),output[1]+((output[3] - output[1])/2),1,1]
                         id = output[4]
                         cls = output[5]
 
@@ -214,6 +215,8 @@ def run(
                             label = None if hide_labels else (f'{id} {names[c]}' if hide_conf else \
                                 (f'{id} {conf:.2f}' if hide_class else f'{id} {names[c]} {conf:.2f}'))
                             annotator.box_label(bboxes, label, color=colors(c, True))
+                            #점 찍기
+                            cv2.line(im0,((int)(output[0]+((output[2] - output[0])/2)),(int)(output[1]+((output[3] - output[1])/2))),((int)(output[0]+((output[2] - output[0])/2)),(int)(output[1]+((output[3] - output[1])/2))),(0,0,255),50)
                             if save_crop:
                                 txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
                                 save_one_box(bboxes, imc, file=save_dir / 'crops' / txt_file_name / names[c] / f'{id}' / f'{p.stem}.jpg', BGR=True)
