@@ -194,7 +194,6 @@ def run(
                     for j, (output, conf) in enumerate(zip(outputs[i], det[:, 4])):
     
                         bboxes = output[0:4]
-                        bbox2 = [output[0]+((output[2] - output[0])/2),output[1]+((output[3] - output[1])/2),1,1]
                         id = output[4]
                         cls = output[5]
 
