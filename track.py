@@ -204,8 +204,8 @@ def run(
                         if id>len(curr_lo):
                             curr_lo.append([center_x,center_y]) # 처음 검출된 개체이기 때문에 현재 위치에 저장
                         else:
-                            prev_lo[(int)id-1]=curr_lo[(int)id-1]
-                            curr_lo.insert((int)id-1,[center_x,center_y])
+                            prev_lo[(int)(id-1)]=curr_lo[(int)(id-1)]
+                            curr_lo.insert((int)(id-1),[center_x,center_y])
                         # print(id)
                         if save_txt:
                             # to MOT format
