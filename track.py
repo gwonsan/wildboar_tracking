@@ -40,8 +40,12 @@ from trackers.multi_tracker_zoo import create_tracker
 #logging.getLogger().removeHandler(logging.getLogger().handlers[0])
 
 #id별 예전위치 및 현재 위치 리스트
-prev_lo=[]
-curr_lo=[]
+# prev_lo=[]
+# curr_lo=[]
+
+lines = {}
+arrow_lines = []
+arrow_line_length = 50
 
 @torch.no_grad()
 def run(
@@ -68,7 +72,7 @@ def run(
         project=ROOT / 'runs/track',  # save results to project/name
         name='exp',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
-        line_thickness=2,  # bounding box thickness (pixels)
+        line_thickness=10,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
         hide_class=False,  # hide IDs
@@ -199,18 +203,37 @@ def run(
                         bboxes = output[0:4]
                         id = output[4]
                         cls = output[5]
+                        global arrow_lines
                         center_x=(int)(output[0]+((output[2] - output[0])/2))
                         center_y=(int)(output[1]+((output[3] - output[1])/2))
-                        if id>len(curr_lo):
-                            curr_lo.append([center_x,center_y]) # 처음 검출된 개체이기 때문에 현재 위치에 저장
-                        else:
-                            prev_lo[(int)(id-1)]=curr_lo[(int)(id-1)]
-                            curr_lo.insert((int)(id-1),[center_x,center_y])
+                        # print(prev_lo)
+                        # print(curr_lo)
+                        # if id>len(curr_lo):
+                        #     # prev_lo.append([center_x,center_y]) # 처음 검출된 개체이기 때문에 현재 위치에 저장
+                        #     curr_lo.insert((int)(id-1),[[center_x,center_y]]) # 처음 검출된 개체이기 때문에 현재 위치에 저장
+                        # else:
+                        #     # prev_lo[(int)(id-1)]=curr_lo[(int)(id-1)]
+                        #     curr_lo[(int)(id-1)].append([center_x,center_y])
                         # print(id)
+                        print(lines)
+                        if id not in lines:
+                            lines[int(id)] = {'points':[], 'arrows':[], 'color':(0,0,255)}
+                        lines[int(id)]['points'].append(np.array([center_x, center_y], np.int32))
+                        points = lines[int(id)]['points']
+                        if len(points) >= 2:
+                            arrow_lines = lines[int(id)]['arrows']
+                            if len(arrow_lines) > 0:
+                                distance = np.linalg.norm(points[-1] - arrow_lines[-1]['end'])
+                                if distance >= arrow_line_length:
+                                    start = np.rint(arrow_lines[-1]['end'] - ((arrow_lines[-1]['end'] - points[-1])/distance)*10).astype(int)
+                                    arrow_lines.append({'start':start, 'end':points[-1]})
+                            else:
+                                distance = 0
+                                arrow_lines.append({'start':points[-2], 'end':points[-1]})
                         if save_txt:
                             # to MOT format
                             bbox_left = output[0]
-                            bbox_top = output[1]
+                            bbox_top = output[1] 
                             bbox_w = output[2] - output[0]
                             bbox_h = output[3] - output[1]
                             # Write MOT compliant results to file
@@ -224,7 +247,13 @@ def run(
                                 (f'{id} {conf:.2f}' if hide_class else f'{id} {names[c]} {conf:.2f}'))
                             annotator.box_label(bboxes, label, color=colors(c, True))
                             #점 찍기
-                            cv2.line(im0,(center_x,center_y),(center_x,center_y),(0,0,255),50)
+                            cv2.line(im0,(center_x,center_y),(center_x,center_y),(0,0,255),5)
+                            # if prev_lo[(int)(id-1)]:
+                                # cv2.arrowedLine(im0,(prev_lo[(int)(id-1)][0],prev_lo[(int)(id-1)][1]),(center_x,center_y),(0,0,255),5)
+                            for line in lines.values():
+                                arrow_lines = line['arrows']
+                                for arrow_line in arrow_lines:
+                                    detected_frame = cv2.arrowedLine(im0, arrow_line['start'], arrow_line['end'], line['color'], 2, line_type=cv2.LINE_AA)    
                             if save_crop:
                                 txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
                                 save_one_box(bboxes, imc, file=save_dir / 'crops' / txt_file_name / names[c] / f'{id}' / f'{p.stem}.jpg', BGR=True)
