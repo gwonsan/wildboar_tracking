@@ -243,7 +243,7 @@ def run(
                         if save_vid or save_crop or show_vid:  # Add bbox to image
                             c = int(cls)  # integer class
                             id = int(id)  # integer id
-                            label = None if hide_labels else (f'{id} {names[c]}' if hide_conf else \
+                            label = None if hide_labels else (f'{id} {names[c]}' if hide_conf else 
                                 (f'{id} {conf:.2f}' if hide_class else f'{id} {names[c]} {conf:.2f}'))
                             annotator.box_label(bboxes, label, color=colors(c, True))
                             #점 찍기
@@ -252,12 +252,16 @@ def run(
                                 # cv2.arrowedLine(im0,(prev_lo[(int)(id-1)][0],prev_lo[(int)(id-1)][1]),(center_x,center_y),(0,0,255),5)
                             for line in lines.values():
                                 arrow_lines = line['arrows']
+                                print(arrow_lines)
                                 for arrow_line in arrow_lines:
                                     detected_frame = cv2.arrowedLine(im0, arrow_line['start'], arrow_line['end'], line['color'], 2, line_type=cv2.LINE_AA)    
+                                    dir_x= arrow_line['end'][0]-arrow_line['start'][0]
+                                    dir_y= arrow_line['end'][1]-arrow_line['start'][1]
+                                    dirr = str(np.arctan2(dir_x,dir_y))
+                                    cv2.putText(im0,dirr,(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
                             if save_crop:
                                 txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
                                 save_one_box(bboxes, imc, file=save_dir / 'crops' / txt_file_name / names[c] / f'{id}' / f'{p.stem}.jpg', BGR=True)
-
                 LOGGER.info(f'{s}Done. yolo:({t3 - t2:.3f}s), {tracking_method}:({t5 - t4:.3f}s)')
 
             else:
